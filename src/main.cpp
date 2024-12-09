@@ -51,9 +51,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::vector<std::vector<int>> m(s, std::vector<int>(s, -1));
-    for (int i = 0; i < s; i++) {
-        for (int j = i + 1; j < s; j++) {
+    std::vector<std::vector<int>> m(t, std::vector<int>(t, -1));
+    for (int i = 0; i < t; i++) {
+        for (int j = i + 1; j < t; j++) {
             m[i][j] = p.e_vars.size();
             p.e_vars.push_back({"y_" + std::to_string(m[i][j]), {}});
             for (int k = 0; k < n_bits; k++) {
@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
 
     p.out_var = "R";
 
-    for (int i = 0; i < s; i++) {
-        for (int j = i + 1; j < s; j++) {
+    for (int i = 0; i < t; i++) {
+        for (int j = i + 1; j < t; j++) {
             std::vector<Input> child;
             for (int k = 0; k < n_bits; k++) {
                 std::string name = "eq_x_" + std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
@@ -83,19 +83,19 @@ int main(int argc, char** argv) {
 
     // Force each y to have the same value on the same input
     std::set<std::pair<int, int>> pairs;
-    for (int i = 0; i < s; i++) {
-        for (int j = i + 2; j < s; j++) {
+    for (int i = 0; i < t; i++) {
+        for (int j = i + 2; j < t; j++) {
             pairs.insert({m[i][i+1], m[i][j]});
         }
     }
-    for (int i = 1; i < s - 1; i++) {
-        pairs.insert({m[0][s-1], m[i][s-1]});
+    for (int i = 1; i < t - 1; i++) {
+        pairs.insert({m[0][t-1], m[i][t-1]});
     }
-    for (int i = 1; i < s * (s - 1) / 2; i++) {
+    for (int i = 1; i < t * (t - 1) / 2; i++) {
         pairs.insert({i-1, i});
     }
-    if (s > 3) {
-        pairs.insert({0, s * (s - 1) / 2 - 1});
+    if (t > 3) {
+        pairs.insert({0, t * (t - 1) / 2 - 1});
     } else {
         pairs.insert({0, 2});
     }
@@ -109,27 +109,38 @@ int main(int argc, char** argv) {
 
     std::vector<Input> rules;
     // Colouring agrees
-    for (int i = 0; i < s; i++) {
-        for (int j = i + 2; j < s; j++) {
+    for (int i = 0; i < t; i++) {
+        for (int j = i + 2; j < t; j++) {
             // x_{i+1} = x_j -> y_{m[i][i+1]} = y_{m[i][j]}
             p.gates.push_back({"R_" + std::to_string(i) + "_" + std::to_string(j), "|", {{"eq_x_" + std::to_string(i + 1) + "_" + std::to_string(j), false}, {"eq_y_" + std::to_string(m[i][i+1]) + "_" + std::to_string(m[i][j]), true}}});
             rules.push_back({"R_" + std::to_string(i) + "_" + std::to_string(j), true});
         }
     }
 
-    for (int i = 1; i < s - 1; i++) {
+    for (int i = 1; i < t - 1; i++) {
         // x_0 = x_i -> y_{m[0][t-1]} = y_{m[i][t-1]}
-        p.gates.push_back({"R_" + std::to_string(i), "|", {{"eq_x_0_" + std::to_string(i), false}, {"eq_y_" + std::to_string(m[0][s-1]) + "_" + std::to_string(m[i][s-1]), true}}});
+        p.gates.push_back({"R_" + std::to_string(i), "|", {{"eq_x_0_" + std::to_string(i), false}, {"eq_y_" + std::to_string(m[0][t-1]) + "_" + std::to_string(m[i][t-1]), true}}});
         rules.push_back({"R_" + std::to_string(i), true});
     }
 
     // Colourings are symmetric
 
+    if (t > 3) {
+        p.gates.push_back({"R_0", "|", {{"eq_x_0_" + std::to_string(t - 1), false}, {"eq_x_1_" + std::to_string(t - 2)}, {"eq_y_0_" + std::to_string(t * (t - 1) / 2 - 1), true}}});
+        rules.push_back({"R_0", true});
+    }
+    if (t == 3) {
+        p.gates.push_back({"R_0", "|", {{"eq_x_0_2", false}, {"eq_y_0_2", true}}});
+        rules.push_back({"R_0", true});
+    }
+
     // x_i != x_j pairwise -> one of y_i != y_j
     {
         std::vector<Input> child;
-        for (auto& v : p.e_vars) {
-            child.push_back({v.first, true});
+        for (int i = 0; i < s; i++) {
+            for (int j = i + 1; j < s; j++) {
+                child.push_back({"y_" + std::to_string(m[i][j]), true});
+            }
         }
         p.gates.push_back({"all_y", "&", child});
     }
@@ -146,14 +157,14 @@ int main(int argc, char** argv) {
 
     {
         std::vector<Input> child;
-        for (int i = 0; i < s; i++) {
-            for (int j = i + 1; j < s; j++) {
+        for (int i = 0; i < t; i++) {
+            for (int j = i + 1; j < t; j++) {
                 child.push_back({"eq_x_" + std::to_string(i) + "_" + std::to_string(j), true});
             }
         }
         child.push_back({"con_y", true});
-        p.gates.push_back({"R_" + std::to_string(s), "|", child});
-        rules.push_back({"R_" + std::to_string(s), true});
+        p.gates.push_back({"R_" + std::to_string(t), "|", child});
+        rules.push_back({"R_" + std::to_string(t), true});
     }
 
     // Conditioning on x_i < n
@@ -167,7 +178,7 @@ int main(int argc, char** argv) {
 
         int cnt = 0;
         std::vector<Input> child;
-        for (int i = 0; i < s; i++) {
+        for (int i = 0; i < t; i++) {
             std::vector<Input> ones;
             for (int j = 0; j < n_bits; j++) {
                 if (bit_n[j]) {
