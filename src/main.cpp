@@ -1,6 +1,8 @@
 #include "common/dqdimacs.hpp"
-#include "common/utils.hpp"
+#include "common/dqcir_simplify.hpp"
 #include "common/dqcir.hpp"
+#include "common/utils.hpp"
+
 #include <cxxopts.hpp>
 #include <iostream>
 #include <string>
@@ -14,6 +16,7 @@ int main(int argc, char** argv) {
         ("s", "s", cxxopts::value<int>())
         ("t", "t", cxxopts::value<int>())
         ("n", "n", cxxopts::value<int>())
+        ("fraig", "Optimize circuit with fraig", cxxopts::value<bool>()->default_value("false"))
         ("tseitin", "Output in CNF format", cxxopts::value<bool>()->default_value("false"))
         ("output", "Output directory", cxxopts::value<std::string>()->default_value("./"))
         ("h,help", "Print usage");
@@ -185,19 +188,23 @@ int main(int argc, char** argv) {
                     ones.push_back({x[i][j], false});
                 } else {
                     p.gates.push_back({"C_" + std::to_string(cnt), "|", ones});
-                    p.gates.back().children.push_back({x[i][j], false});
+                    p.gates.back().inputs.push_back({x[i][j], false});
                     child.push_back({"C_" + std::to_string(cnt++), false});
                 }
             }
         }
         p.gates.push_back({"R_", "&", rules});
         p.gates.push_back({"R", "|", child});
-        p.gates.back().children.push_back({"R_", true});
+        p.gates.back().inputs.push_back({"R_", true});
     } else {
         p.gates.push_back({"R", "&", rules});
     }
 
     std::string file_name = "R_" + std::to_string(s) + "_" + std::to_string(t) + "_" + std::to_string(n + 1);
+
+    if (result["fraig"].as<bool>()) {
+        dqcir_simplify(p);
+    }
 
     if (result["tseitin"].as<bool>()) {
         dqdimacs q;

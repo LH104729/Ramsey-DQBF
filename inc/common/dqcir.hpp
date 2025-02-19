@@ -1,20 +1,11 @@
 #ifndef DQCIR_HPP
 #define DQCIR_HPP
 
+#include "common/circuit.hpp"
+
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-struct Input {
-    std::string name;
-    bool sign;
-};
-
-struct Gate {
-    std::string name;
-    std::string operation;
-    std::vector<Input> children;
-};
 
 // Data structure for DQBF in circuit form
 class dqcir {

@@ -34,13 +34,13 @@ void dqdimacs::from_file(dqcir& p) {
             {
                 Clause c;
                 c.push_back({var_map[w.name], true});
-                for (auto& u : w.children) {
+                for (auto& u : w.inputs) {
                     c.push_back({var_map[u.name], !u.sign});
                 }
                 phi.push_back(c);
             }
             // ~w | c1
-            for (auto& u : w.children) {
+            for (auto& u : w.inputs) {
                 Clause c;
                 c.push_back({var_map[w.name], false});
                 c.push_back({var_map[u.name], u.sign});
@@ -52,14 +52,14 @@ void dqdimacs::from_file(dqcir& p) {
             {
                 Clause c;
                 c.push_back({var_map[w.name], false});
-                for (auto& u : w.children) {
+                for (auto& u : w.inputs) {
                     c.push_back({var_map[u.name], u.sign});
                 }
                 phi.push_back(c);
             }
 
             // ~c1 | w
-            for (auto& u : w.children) {
+            for (auto& u : w.inputs) {
                 Clause c;
                 c.push_back({var_map[w.name], true});
                 c.push_back({var_map[u.name], !u.sign});

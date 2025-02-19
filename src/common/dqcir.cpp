@@ -46,11 +46,11 @@ void dqcir::to_file(std::string path) {
     };
 
     for (auto& gate : gates) {
-        std::vector<std::string> children;
-        for (auto& [name, sign] : gate.children) {
-            children.push_back((sign ? "" : "-") + name);
+        std::vector<std::string> inputs;
+        for (auto& [name, sign] : gate.inputs) {
+            inputs.push_back((sign ? "" : "-") + name);
         }
-        file << gate.name << " = " << gate_map[gate.operation] << "(" << join(children, ", ") << ")\n";
+        file << gate.name << " = " << gate_map[gate.operation] << "(" << join(inputs, ", ") << ")\n";
     }
     file.close();
 }
